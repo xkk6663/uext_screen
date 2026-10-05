@@ -1,0 +1,12 @@
+## uext main component - offline build.
+## Dependencies below are satisfied by LOCAL components in ../components/
+## (the component manager matches them by name, see build log for esp_lcd_touch).
+## They are declared here mainly to fix COMPONENT PROCESSING ORDER:
+## main/CMakeLists.txt injects tusb descriptors into the tinyusb target and
+## therefore tinyusb must be registered before main.
+version: 0.2.0
+targets:
+  - esp32s31
+dependencies:
+  idf: ">=5.3"
+  espressif/tinyusb: "*"

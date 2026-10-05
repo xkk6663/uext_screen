@@ -1,0 +1,39 @@
+name: ESP IoT Solution - USB Device Examples
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  build:
+    # Run the workflow, only with BUILD_AND_TEST_EXTERNAL_EXAMPLES PR label
+    if: contains(github.event.pull_request.labels.*.name, 'BUILD_AND_TEST_EXTERNAL_EXAMPLES')
+    name: Build
+    strategy:
+      matrix:
+        idf_ver: ["release-v5.3", "release-v5.4", "release-v5.5", "release-v6.0", "latest"]
+        name: ["usb_uart_bridge"]
+    runs-on: ubuntu-latest
+    container: espressif/idf:${{ matrix.idf_ver }}
+    permissions:
+      pull-requests: read
+    env:
+      IDF_BUILD_APPS_VER: "2.13.3"
+      TARGET_PATH: esp-iot-solution
+      TARGET_MANIFEST_PATH: esp-iot-solution/examples/.build-rules.yml
+      TARGET_EXAMPLES_PATH: esp-iot-solution/examples/usb/device/${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: 'true'
+      - name: Clone esp-iot-solution repository
+        run: |
+          git clone https://github.com/espressif/esp-iot-solution.git
+      - name: Build
+        shell: bash
+        run: |
+          . ${IDF_PATH}/export.sh
+          pip install --no-cache-dir idf-build-apps==${{ env.IDF_BUILD_APPS_VER }} pyyaml --upgrade
+          python .github/ci/override_managed_component.py tinyusb . ${{ env.TARGET_EXAMPLES_PATH }}/
+          idf-build-apps find -p ${{ env.TARGET_EXAMPLES_PATH }} -t all --manifest-file ${{ env.TARGET_MANIFEST_PATH }} --manifest-rootpath ${{ env.TARGET_PATH }}
+          idf-build-apps build -p ${{ env.TARGET_EXAMPLES_PATH }} -t all --manifest-file ${{ env.TARGET_MANIFEST_PATH }} --manifest-rootpath ${{ env.TARGET_PATH }}

@@ -1,0 +1,13 @@
+# 文本文件由 Git 自动识别并按 LF 规范化（与 ESP-IDF 上游一致）
+* text=auto
+
+# 二进制文件：禁止任何换行/编码转换
+*.exe   binary
+*.bin   binary
+*.elf   binary
+*.a     binary
+*.o     binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary

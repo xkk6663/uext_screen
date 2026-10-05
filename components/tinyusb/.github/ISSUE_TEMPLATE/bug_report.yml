@@ -1,0 +1,50 @@
+name: Bug report
+description: Report build and runtime bugs
+labels: ["Type: Bug"]
+body:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Answers checklist.
+      description: Before submitting a new issue, please follow the checklist and try to find the answer.
+      options:
+        - label: I have read the component documentation [ESP-IDF Components](https://components.espressif.com) and the issue is not addressed there.
+          required: true
+        - label: I am using target and esp-idf version as defined in component's idf_component.yml
+          required: true
+        - label: I have searched the upstream [issue tracker](https://github.com/hathach/tinyusb/issues?q=is%3Aissue) for a similar issue and not found any related issue.
+          required: true
+        - label: I have searched the Espressif esp-usb component [issue tracker](https://github.com/espressif/esp-usb/issues?q=is%3Aissue) for a similar issue and not found any related issue.
+          required: true
+  - type: input
+    id: idf_version
+    attributes:
+      label: ESP-IDF version.
+      description: Which ESP-IDF version does this issue occur on? Run `git describe --tags` in your esp-idf folder to find it.
+      placeholder: ex. v5.0-rc1
+    validations:
+      required: true
+  - type: input
+    id: devkit
+    attributes:
+      label: Development Kit.
+      description: Which Development Kit does this issue occur on?
+      placeholder: ex. ESP32-Wrover-Kit v2 | Custom Board
+    validations:
+      required: true
+  - type: input
+    id: component_version
+    attributes:
+      label: Used Component version.
+      description: Which Component version does this issue occur on? Check `dependencies.lock` file in your project root to find it.
+      placeholder: ex. v1.2.0-rc0
+    validations:
+      required: true
+  - type: textarea
+    id: more-info
+    attributes:
+      label: More Information.
+      description: Any other information from investigating this?
+      placeholder: ex. I tried on Windows 10 PC and the issue couldn't be reproduced there.
+    validations:
+      required: false

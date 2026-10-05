@@ -1,0 +1,8 @@
+## Vendored from usb_extend_screen example (override BSP: no LVGL, no bb_mode).
+## All deps satisfied by sibling local components - nothing may be fetched.
+description: Minimal LCD, touch and I2S BSP for ESP32-S31-Korvo-1
+targets:
+  - esp32s31
+version: 0.1.0
+dependencies:
+  idf: ">=5.5"

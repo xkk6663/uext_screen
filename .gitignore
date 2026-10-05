@@ -1,0 +1,18 @@
+# ESP-IDF 构建产物
+build/
+sdkconfig.old
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统杂项
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]

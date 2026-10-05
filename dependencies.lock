@@ -1,0 +1,34 @@
+dependencies:
+  esp_lcd_touch:
+    dependencies: []
+    source:
+      path: components/esp_lcd_touch
+      type: local
+    version: 1.2.1
+  espressif/tinyusb:
+    component_hash: 16c8d774dab1f484d3e0c0f61105624d2424bbae864efd19818baf7b451b41e7
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32p4
+    - esp32h4
+    - esp32s31
+    version: 0.21.0~2
+  idf:
+    source:
+      type: idf
+    version: 6.1.0
+direct_dependencies:
+- espressif/esp_lcd_touch
+- espressif/tinyusb
+- idf
+manifest_hash: 8636191e7a0726116f83272a68c6ef6d1da77efe298f63c4f9cdbb7a81a2f24c
+target: esp32s31
+version: 3.0.0
