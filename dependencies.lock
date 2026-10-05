@@ -29,6 +29,6 @@ direct_dependencies:
 - espressif/esp_lcd_touch
 - espressif/tinyusb
 - idf
-manifest_hash: 8636191e7a0726116f83272a68c6ef6d1da77efe298f63c4f9cdbb7a81a2f24c
+manifest_hash: 060a00f79353a86313e06b1c77537204ea6d30189191d20e64461f5cfd00c44e
 target: esp32s31
 version: 3.0.0
