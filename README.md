@@ -1,6 +1,6 @@
 <div align="center">
 
-# uext_screen
+# 基于ESP32-S31的Windows桌面副屏
 
 **把 ESP32-S31-Korvo-1 开发板变成一块 USB 扩展屏**
 
