@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <string.h>
 #include "esp_log.h"
 #include "app_usb.h"
 #include "app_lcd.h"
@@ -12,10 +13,6 @@
 
 static const char *TAG = "app_vendor";
 static frame_t *current_frame = NULL;
-
-// Consecutive "no empty frame available" events tolerated before the pool is rebuilt.
-#define VENDOR_EMPTY_STARVE_RECOVER  150
-static uint32_t s_empty_starve = 0;
 
 //--------------------------------------------------------------------+
 // Vendor callbacks
@@ -41,6 +38,33 @@ typedef struct {
     uint32_t frame_id: 10;
     uint32_t payload_total: 22; //padding 32bit align
 } __attribute__((packed)) udisp_frame_header_t;
+
+//--------------------------------------------------------------------+
+// Receive-path state (owned by tud_vendor_rx_cb, reset on USB events)
+//--------------------------------------------------------------------+
+static uint8_t rx_buf[CONFIG_USB_VENDOR_RX_BUFSIZE];
+static bool skip_frame = false;
+static frame_info_t skip_frame_info = {0};
+static uint32_t s_empty_starve = 0;
+
+// Consecutive "no empty frame available" events tolerated before the pool is rebuilt.
+#define VENDOR_EMPTY_STARVE_RECOVER  150
+
+static void reset_rx_state(void)
+{
+    current_frame = NULL;
+    skip_frame = false;
+    memset(&skip_frame_info, 0, sizeof(skip_frame_info));
+    s_empty_starve = 0;
+}
+
+// Invoked from the TinyUSB mount / unmount / suspend callbacks: the host may have torn the
+// pipe down in the middle of a frame, so drop the half-filled buffer and rebuild the pool.
+void app_vendor_reset_state(void)
+{
+    reset_rx_state();
+    frame_pool_recover("usb-event");
+}
 
 void transfer_task(void *pvParameter)
 {
@@ -92,10 +116,6 @@ static bool buffer_fill(frame_t *frame, uint8_t *buf, uint32_t len)
 
 void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 {
-    static uint8_t rx_buf[CONFIG_USB_VENDOR_RX_BUFSIZE];
-    static bool skip_frame = false;
-    static frame_info_t skip_frame_info = {0};
-
     while (tud_vendor_n_available(itf)) {
         if (!current_frame && !skip_frame && tud_vendor_n_available(itf) < sizeof(udisp_frame_header_t)) {
             break;

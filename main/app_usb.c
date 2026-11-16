@@ -89,12 +89,18 @@ esp_err_t app_usb_init(void)
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {
+#if CFG_TUD_VENDOR
+    app_vendor_reset_state();
+#endif
     ESP_LOGI(TAG, "USB Mount");
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
+#if CFG_TUD_VENDOR
+    app_vendor_reset_state();
+#endif
     ESP_LOGI(TAG, "USB Un-Mount");
 }
 
@@ -105,6 +111,9 @@ void tud_suspend_cb(bool remote_wakeup_en)
 {
     (void) remote_wakeup_en;
     ESP_LOGI(TAG, "USB Suspend");
+#if CFG_TUD_VENDOR
+    app_vendor_reset_state();
+#endif
 }
 
 // Invoked when usb bus is resumed
