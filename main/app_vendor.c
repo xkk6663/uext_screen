@@ -13,6 +13,10 @@
 static const char *TAG = "app_vendor";
 static frame_t *current_frame = NULL;
 
+// Consecutive "no empty frame available" events tolerated before the pool is rebuilt.
+#define VENDOR_EMPTY_STARVE_RECOVER  150
+static uint32_t s_empty_starve = 0;
+
 //--------------------------------------------------------------------+
 // Vendor callbacks
 //--------------------------------------------------------------------+
@@ -141,6 +145,7 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 
                     current_frame = frame_get_empty();
                     if (current_frame) {
+                        s_empty_starve = 0;
                         current_frame->info.width = pblt->width;
                         current_frame->info.height = pblt->height;
                         current_frame->info.total = pblt->payload_total;
@@ -152,6 +157,12 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
                     } else {
                         skip_frame = start_skip_frame(&skip_frame_info, pblt->payload_total, first_payload_len);
                         ESP_LOGE(TAG, "Get frame is null");
+                        if (++s_empty_starve >= VENDOR_EMPTY_STARVE_RECOVER) {
+                            // The pool is not making progress: rebuild it instead of freezing
+                            // until the next reboot.
+                            frame_pool_recover("rx-starve");
+                            s_empty_starve = 0;
+                        }
                         // Feed the task dog
                         vTaskDelay(1 / portTICK_PERIOD_MS);
                     }
