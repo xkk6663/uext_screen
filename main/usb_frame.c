@@ -140,6 +140,22 @@ void frame_pool_recover(const char *why)
              why ? why : "?", s_pool_cnt, requeued, s_dropped_frames, s_recover_cnt);
 }
 
+void frame_pool_stats(int *empty_cnt, int *filled_cnt, uint32_t *dropped, uint32_t *recovered)
+{
+    if (empty_cnt) {
+        *empty_cnt = empty_fb_queue ? (int)uxQueueMessagesWaiting(empty_fb_queue) : -1;
+    }
+    if (filled_cnt) {
+        *filled_cnt = filled_fb_queue ? (int)uxQueueMessagesWaiting(filled_fb_queue) : -1;
+    }
+    if (dropped) {
+        *dropped = s_dropped_frames;
+    }
+    if (recovered) {
+        *recovered = s_recover_cnt;
+    }
+}
+
 esp_err_t frame_add_data(frame_t *frame, const uint8_t *data, size_t data_len)
 {
     ESP_RETURN_ON_FALSE(frame && data && data_len, ESP_ERR_INVALID_ARG, TAG, "Invalid arguments");

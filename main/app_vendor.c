@@ -158,7 +158,11 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
                     fps_count++;
                     if (fps_count == 50) {
                         int64_t end_time = esp_timer_get_time();
-                        ESP_LOGI(TAG, "Input fps: %f", 1000000.0 / ((end_time - start_time) / 50.0));
+                        int empty_cnt = 0, filled_cnt = 0;
+                        uint32_t dropped = 0, recovered = 0;
+                        frame_pool_stats(&empty_cnt, &filled_cnt, &dropped, &recovered);
+                        ESP_LOGI(TAG, "Input fps: %f  pool(empty=%d filled=%d) drops=%"PRIu32" recover=%"PRIu32,
+                                 1000000.0 / ((end_time - start_time) / 50.0), empty_cnt, filled_cnt, dropped, recovered);
                         start_time = end_time;
                         fps_count = 0;
                     }
@@ -176,8 +180,13 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
                         }
                     } else {
                         skip_frame = start_skip_frame(&skip_frame_info, pblt->payload_total, first_payload_len);
-                        ESP_LOGE(TAG, "Get frame is null");
-                        if (++s_empty_starve >= VENDOR_EMPTY_STARVE_RECOVER) {
+                        if (s_empty_starve == 0) {
+                            int empty_cnt = 0, filled_cnt = 0;
+                            frame_pool_stats(&empty_cnt, &filled_cnt, NULL, NULL);
+                            ESP_LOGE(TAG, "Get frame is null (starving) empty=%d filled=%d", empty_cnt, filled_cnt);
+                        }
+                        s_empty_starve++;
+                        if (s_empty_starve >= VENDOR_EMPTY_STARVE_RECOVER) {
                             // The pool is not making progress: rebuild it instead of freezing
                             // until the next reboot.
                             frame_pool_recover("rx-starve");

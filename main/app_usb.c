@@ -109,8 +109,7 @@ void tud_umount_cb(void)
 // Within 7ms, device must draw an average of current less than 2.5 mA from bus
 void tud_suspend_cb(bool remote_wakeup_en)
 {
-    (void) remote_wakeup_en;
-    ESP_LOGI(TAG, "USB Suspend");
+    ESP_LOGI(TAG, "USB Suspend (remote_wakeup_allowed=%d)", remote_wakeup_en);
 #if CFG_TUD_VENDOR
     app_vendor_reset_state();
 #endif

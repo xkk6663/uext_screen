@@ -52,6 +52,16 @@ frame_t *frame_get_filled(void);
  */
 void frame_pool_recover(const char *why);
 
+/**
+ * @brief Snapshot of the pool state, for logging and diagnostics.
+ *
+ * @param empty_cnt   frames currently sitting in the empty queue (-1 if not allocated yet)
+ * @param filled_cnt  frames currently waiting to be drawn (-1 if not allocated yet)
+ * @param dropped     frames dropped because a queue was full (cumulative)
+ * @param recovered   number of pool rebuilds (cumulative)
+ */
+void frame_pool_stats(int *empty_cnt, int *filled_cnt, uint32_t *dropped, uint32_t *recovered);
+
 #ifdef __cplusplus
 }
 #endif
