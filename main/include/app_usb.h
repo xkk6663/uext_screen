@@ -64,6 +64,14 @@ esp_err_t app_hid_init(void);
 
 #if CFG_TUD_VENDOR
 esp_err_t app_vendor_init(void);
+
+/**
+ * @brief Reset the receive path (half-filled frame, skip state) and rebuild the frame pool.
+ *
+ * Called from the TinyUSB mount/unmount callbacks so a host-side re-enumeration can never
+ * leave the pool in a starved state.
+ */
+void app_vendor_reset_state(void);
 #endif
 
 #if CFG_TUD_AUDIO

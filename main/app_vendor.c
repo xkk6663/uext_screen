@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <string.h>
 #include "esp_log.h"
 #include "app_usb.h"
 #include "app_lcd.h"
@@ -37,6 +38,33 @@ typedef struct {
     uint32_t frame_id: 10;
     uint32_t payload_total: 22; //padding 32bit align
 } __attribute__((packed)) udisp_frame_header_t;
+
+//--------------------------------------------------------------------+
+// Receive-path state (shared by tud_vendor_rx_cb and the reset hooks)
+//--------------------------------------------------------------------+
+static uint8_t rx_buf[CONFIG_USB_VENDOR_RX_BUFSIZE];
+static bool skip_frame = false;
+static frame_info_t skip_frame_info = {0};
+static uint32_t s_empty_starve = 0;
+
+// Consecutive "no empty frame available" events tolerated before the pool is rebuilt.
+#define VENDOR_EMPTY_STARVE_RECOVER  150
+
+static void reset_rx_state(void)
+{
+    current_frame = NULL;
+    skip_frame = false;
+    memset(&skip_frame_info, 0, sizeof(skip_frame_info));
+    s_empty_starve = 0;
+}
+
+// Called from the USB callbacks (mount / unmount / suspend): the host may have torn the
+// pipe down in the middle of a frame, so drop any half-filled buffer and rebuild the pool.
+void app_vendor_reset_state(void)
+{
+    reset_rx_state();
+    frame_pool_recover("usb-event");
+}
 
 void transfer_task(void *pvParameter)
 {
@@ -88,10 +116,6 @@ static bool buffer_fill(frame_t *frame, uint8_t *buf, uint32_t len)
 
 void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
 {
-    static uint8_t rx_buf[CONFIG_USB_VENDOR_RX_BUFSIZE];
-    static bool skip_frame = false;
-    static frame_info_t skip_frame_info = {0};
-
     while (tud_vendor_n_available(itf)) {
         if (!current_frame && !skip_frame && tud_vendor_n_available(itf) < sizeof(udisp_frame_header_t)) {
             break;
@@ -134,13 +158,18 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
                     fps_count++;
                     if (fps_count == 50) {
                         int64_t end_time = esp_timer_get_time();
-                        ESP_LOGI(TAG, "Input fps: %f", 1000000.0 / ((end_time - start_time) / 50.0));
+                        int empty_cnt = 0, filled_cnt = 0;
+                        uint32_t dropped = 0, recovered = 0;
+                        frame_pool_stats(&empty_cnt, &filled_cnt, &dropped, &recovered);
+                        ESP_LOGI(TAG, "Input fps: %f  pool(empty=%d filled=%d) drops=%"PRIu32" recover=%"PRIu32,
+                                 1000000.0 / ((end_time - start_time) / 50.0), empty_cnt, filled_cnt, dropped, recovered);
                         start_time = end_time;
                         fps_count = 0;
                     }
 
                     current_frame = frame_get_empty();
                     if (current_frame) {
+                        s_empty_starve = 0;
                         current_frame->info.width = pblt->width;
                         current_frame->info.height = pblt->height;
                         current_frame->info.total = pblt->payload_total;
@@ -151,7 +180,18 @@ void tud_vendor_rx_cb(uint8_t itf, uint8_t const* buffer, uint16_t bufsize)
                         }
                     } else {
                         skip_frame = start_skip_frame(&skip_frame_info, pblt->payload_total, first_payload_len);
-                        ESP_LOGE(TAG, "Get frame is null");
+                        if (s_empty_starve == 0) {
+                            int empty_cnt = 0, filled_cnt = 0;
+                            frame_pool_stats(&empty_cnt, &filled_cnt, NULL, NULL);
+                            ESP_LOGE(TAG, "Get frame is null (starving) empty=%d filled=%d", empty_cnt, filled_cnt);
+                        }
+                        s_empty_starve++;
+                        if (s_empty_starve >= VENDOR_EMPTY_STARVE_RECOVER) {
+                            // Pool is not making progress: force it back to a known state instead of
+                            // freezing until reboot.
+                            frame_pool_recover("rx-starve");
+                            s_empty_starve = 0;
+                        }
                         // Feed the task dog
                         vTaskDelay(1 / portTICK_PERIOD_MS);
                     }
