@@ -234,6 +234,11 @@ uext_screen/
 
 **编译报错？** 确认 ESP-IDF 版本为 **v6.1**（`idf.py --version`），并先 `idf.py fullclean`。
 
+**上电首启多复位一次 / 串口出现 `CPU_LOCKUP_RESET`？** 这是 ESP-IDF **v6.1.1** 为 ESP32-S31
+新增的 ocode 校准被链接到 flash、却由 IRAM 中的 `pmu_init()` 调用导致的取指异常。
+打上 [patches/esp-idf-6.1.1-esp32s31-ocode-iram.patch](patches/esp-idf-6.1.1-esp32s31-ocode-iram.patch)
+重新编译即可，细节见 [docs/idf-6.1.1-esp32s31-boot-lockup.md](docs/idf-6.1.1-esp32s31-boot-lockup.md)。
+
 **能免驱动吗？** 不能。设备遵循自定义 Vendor 协议，Windows 没有内置驱动能理解它。
 
 **会覆盖板子上的其它固件吗？** 本工程自带独立分区表，`factory` 从 `0x10000` 开始。
