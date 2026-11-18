@@ -1,0 +1,24 @@
+diff --git a/components/esp_hw_support/port/esp32s31/ocode_init.c b/components/esp_hw_support/port/esp32s31/ocode_init.c
+index 58314d286e..627ad94d60 100644
+--- a/components/esp_hw_support/port/esp32s31/ocode_init.c
++++ b/components/esp_hw_support/port/esp32s31/ocode_init.c
+@@ -10,8 +10,9 @@
+ #include "hal/efuse_ll.h"
+ #include "soc/regi2c_lp_bias.h"
+ #include "esp_private/regi2c_ctrl.h"
++#include "esp_attr.h"
+ 
+-static void set_ocode_by_efuse(int ocode_scheme_ver)
++static void IRAM_ATTR set_ocode_by_efuse(int ocode_scheme_ver)
+ {
+     assert(ocode_scheme_ver == 1);
+     unsigned int ocode = efuse_ll_get_ocode();
+@@ -20,7 +21,7 @@ static void set_ocode_by_efuse(int ocode_scheme_ver)
+     REGI2C_WRITE_MASK(I2C_ULP, I2C_ULP_IR_FORCE_CODE, 1);
+ }
+ 
+-void esp_ocode_calib_init(void)
++void IRAM_ATTR esp_ocode_calib_init(void)
+ {
+     uint32_t blk_version = efuse_hal_blk_version();
+     // major * 100 + minor. Scheme 1 is only valid before the next major version.
